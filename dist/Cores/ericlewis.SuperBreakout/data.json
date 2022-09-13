@@ -1,0 +1,14 @@
+{
+    "data": {
+        "magic": "APF_VER_1",
+        "data_slots": [
+            {
+                "name": "ROM",
+                "required": true,
+                "parameters": 8,
+                "filename": "sbrkout.rom",
+                "address": "0x00000000"
+            }
+        ]
+    }
+}

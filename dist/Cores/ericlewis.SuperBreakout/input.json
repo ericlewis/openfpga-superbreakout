@@ -1,0 +1,27 @@
+{
+    "input": {
+        "magic": "APF_VER_1",
+        "controllers": [
+            {
+                "type": "default",
+                "mappings": [
+                  {
+                    "id": 0,
+                    "name": "Serve",
+                    "key": "pad_btn_a"
+                  },
+                  {
+                    "id": 1,
+                    "name": "Insert Coin",
+                    "key": "pad_trig_r"
+                  },
+                  {
+                    "id": 2,
+                    "name": "Start",
+                    "key": "pad_btn_start"
+                  }
+                ]
+              }
+        ]
+    }
+}
