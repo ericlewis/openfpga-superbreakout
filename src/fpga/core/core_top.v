@@ -16,7 +16,7 @@ module core_top (
 // clock inputs 74.25mhz. not phase aligned, so treat these domains as asynchronous
 
 input   wire            clk_74a, // mainclk1
-input   wire            clk_74b, // mainclk1 
+input   wire            clk_74b, // mainclk1
 
 ///////////////////////////////////////////////////
 // cartridge interface
@@ -59,7 +59,7 @@ output  wire            cart_tran_pin31_dir,
 // infrared
 input   wire            port_ir_rx,
 output  wire            port_ir_tx,
-output  wire            port_ir_rx_disable, 
+output  wire            port_ir_rx_disable,
 
 // GBA link port
 inout   wire            port_tran_si,
@@ -70,7 +70,7 @@ inout   wire            port_tran_sck,
 output  wire            port_tran_sck_dir,
 inout   wire            port_tran_sd,
 output  wire            port_tran_sd_dir,
- 
+
 ///////////////////////////////////////////////////
 // cellular psram 0 and 1, two chips (64mbit x2 dual die per chip)
 
@@ -141,7 +141,7 @@ output  wire            user1,
 input   wire            user2,
 
 ///////////////////////////////////////////////////
-// RFU internal i2c bus 
+// RFU internal i2c bus
 
 inout   wire            aux_sda,
 output  wire            aux_scl,
@@ -164,7 +164,7 @@ output  wire            video_de,
 output  wire            video_skip,
 output  wire            video_vs,
 output  wire            video_hs,
-    
+
 output  wire            audio_mclk,
 input   wire            audio_adc,
 output  wire            audio_dac,
@@ -182,7 +182,7 @@ input   wire    [31:0]  bridge_wr_data,
 
 ///////////////////////////////////////////////////
 // controller data
-// 
+//
 // key bitmap:
 //   [0]    dpad_up
 //   [1]    dpad_down
@@ -221,7 +221,7 @@ input   wire    [15:0]  cont1_trig,
 input   wire    [15:0]  cont2_trig,
 input   wire    [15:0]  cont3_trig,
 input   wire    [15:0]  cont4_trig
-    
+
 );
 
 // not using the IR port, so turn off both the LED, and
@@ -331,10 +331,10 @@ end
 //
     wire            reset_n;                // driven by host commands, can be used as core-wide reset
     wire    [31:0]  cmd_bridge_rd_data;
-    
+
 // bridge host commands
 // synchronous to clk_74a
-    wire            status_boot_done = pll_core_locked; 
+    wire            status_boot_done = pll_core_locked;
     wire            status_setup_done = pll_core_locked; // rising edge triggers a target command
     wire            status_running = reset_n; // we are running as soon as reset_n goes high
 
@@ -366,7 +366,7 @@ end
     wire            savestate_load_busy;
     wire            savestate_load_ok;
     wire            savestate_load_err;
-    
+
     wire            osnotify_inmenu;
 
 // bridge target commands
@@ -391,7 +391,7 @@ core_bridge_cmd icb (
     .bridge_rd_data         ( cmd_bridge_rd_data ),
     .bridge_wr              ( bridge_wr ),
     .bridge_wr_data         ( bridge_wr_data ),
-    
+
     .status_boot_done       ( status_boot_done ),
     .status_setup_done      ( status_setup_done ),
     .status_running         ( status_running ),
@@ -426,7 +426,7 @@ core_bridge_cmd icb (
     .savestate_load_err     ( savestate_load_err ),
 
     .osnotify_inmenu        ( osnotify_inmenu ),
-    
+
     .datatable_addr         ( datatable_addr ),
     .datatable_wren         ( datatable_wren ),
     .datatable_data         ( datatable_data ),
@@ -436,187 +436,196 @@ core_bridge_cmd icb (
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////
 
-    wire    clk_core_12288;
-    wire    clk_core_12288_90deg;
     wire    clk_sys;
-    
+    wire    clk_video;
+    wire    clk_video_90deg;
     wire    pll_core_locked;
-    
-mf_pllbase mp1 (
-    .refclk         ( clk_74a ),
-    .rst            ( 0 ),
-    
-    .outclk_0       ( clk_core_12288 ),
-    .outclk_1       ( clk_core_12288_90deg ),
-    
-    .locked         ( pll_core_locked )
-);
 
-assign clk_sys = clk_core_12288;
+    mf_pllbase mp1(
+        .refclk   ( clk_74a ),
+        .rst      ( 0 ),
 
-//////////////////////////////////////////////
-// Core Data
-//////////////////////////////////////////////
+        .outclk_0 ( clk_sys         ),
+        .outclk_1 ( clk_video       ),
+        .outclk_2 ( clk_video_90deg ),
 
-wire        ioctl_wr;
-wire [24:0] ioctl_addr;
-wire  [7:0] ioctl_data;
+        .locked   ( pll_core_locked )
+    );
 
-data_loader #(
-    .ADDRESS_SIZE(16),
-    .WRITE_MEM_CLOCK_DELAY(4)
-) rom_loader (
-    .clk_74a(clk_74a),
-    .clk_memory(clk_sys),
 
-    .bridge_wr(bridge_wr),
-    .bridge_endian_little(bridge_endian_little),
-    .bridge_addr(bridge_addr),
-    .bridge_wr_data(bridge_wr_data),
+    //////////////////////////////////////////////
+    // Core Data
+    //////////////////////////////////////////////
 
-    .write_en(ioctl_wr),
-    .write_addr(ioctl_addr),
-    .write_data(ioctl_data)
-);
+    wire        ioctl_wr;
+    wire [24:0] ioctl_addr;
+    wire  [7:0] ioctl_data;
 
-//////////////////////////////////////////////
-// Core Audio
-//////////////////////////////////////////////
+    data_loader #(
+        .ADDRESS_SIZE(16),
+        .WRITE_MEM_CLOCK_DELAY(4)
+    ) rom_loader (
+        .clk_74a(clk_74a),
+        .clk_memory(clk_sys),
 
-wire [7:0] audio;
+        .bridge_wr(bridge_wr),
+        .bridge_endian_little(bridge_endian_little),
+        .bridge_addr(bridge_addr),
+        .bridge_wr_data(bridge_wr_data),
 
-assign audio_mclk = audgen_mclk;
-assign audio_dac = audgen_dac;
-assign audio_lrck = audgen_lrck;
+        .write_en(ioctl_wr),
+        .write_addr(ioctl_addr),
+        .write_data(ioctl_data)
+    );
 
-reg    audgen_nextsamp;
+    //////////////////////////////////////////////
+    // Core Audio
+    //////////////////////////////////////////////
 
-// generate MCLK = 12.288mhz with fractional accumulator
-reg         [21:0]  audgen_accum;
-reg                 audgen_mclk;
-parameter   [20:0]  CYCLE_48KHZ = 21'd122880 * 2;
-always @(posedge clk_74a) begin
-  audgen_accum <= audgen_accum + CYCLE_48KHZ;
-  if(audgen_accum >= 21'd742500) begin
-    audgen_mclk <= ~audgen_mclk;
-    audgen_accum <= audgen_accum - 21'd742500 + CYCLE_48KHZ;
-  end
-end
+    wire [7:0] audio;
 
-// generate SCLK = 3.072mhz by dividing MCLK by 4
-reg [1:0]   aud_mclk_divider;
-wire        audgen_sclk = aud_mclk_divider[1] /* synthesis keep*/;
-always @(posedge audgen_mclk) begin
-  aud_mclk_divider <= aud_mclk_divider + 1'b1;
-end
+    assign audio_mclk = audgen_mclk;
+    assign audio_dac = audgen_dac;
+    assign audio_lrck = audgen_lrck;
 
-// shift out audio data as I2S
-// 32 total bits per channel, but only 16 active bits at the start and then 16 dummy bits
-//
-// synchronize audio samples coming from the core
-wire	[31:0]	audgen_sampdata_s;
-synch_3 #(.WIDTH(32)) s5(({audio, audio}), audgen_sampdata_s, audgen_sclk);
-reg		[31:0]	audgen_sampshift;
-reg		[4:0]	audgen_lrck_cnt;
-reg				audgen_lrck;
-reg				audgen_dac;
-always @(negedge audgen_sclk)
-begin
-  // output the next bit
-  audgen_dac <= audgen_sampshift[31];
+    reg    audgen_nextsamp;
 
-  // 48khz * 64
-  audgen_lrck_cnt <= audgen_lrck_cnt + 1'b1;
-  if(audgen_lrck_cnt == 31) begin
-    // switch channels
-    audgen_lrck <= ~audgen_lrck;
-
-    // Reload sample shifter
-    if(~audgen_lrck)
-    begin
-      audgen_sampshift <= audgen_sampdata_s;
+    // generate MCLK = 12.288mhz with fractional accumulator
+    reg         [21:0]  audgen_accum;
+    reg                 audgen_mclk;
+    parameter   [20:0]  CYCLE_48KHZ = 21'd122880 * 2;
+    always @(posedge clk_74a) begin
+        audgen_accum <= audgen_accum + CYCLE_48KHZ;
+        if(audgen_accum >= 21'd742500) begin
+            audgen_mclk <= ~audgen_mclk;
+            audgen_accum <= audgen_accum - 21'd742500 + CYCLE_48KHZ;
+        end
     end
-  end else if(audgen_lrck_cnt < 16) begin
-    // only shift for 16 clocks per channel
-    audgen_sampshift <= {audgen_sampshift[30:0], 1'b0};
-  end
-end
-			
-///////////////////////////////////////////////
-// Core Video
-///////////////////////////////////////////////
 
-wire videowht;
-wire hs, vs, hblank, vblank_internal;
+    // generate SCLK = 3.072mhz by dividing MCLK by 4
+    reg [1:0]   aud_mclk_divider;
+    wire        audgen_sclk = aud_mclk_divider[1] /* synthesis keep*/;
+    always @(posedge audgen_mclk) begin
+        aud_mclk_divider <= aud_mclk_divider + 1'b1;
+    end
 
-wire ce_pix;
-wire [8:0] videorgb;
-wire [2:0] r,g;
-wire [2:0] b;
-assign r={3{videowht}};
-assign g={3{videowht}};
-assign b={3{videowht}};
+    // shift out audio data as I2S
+    // 32 total bits per channel, but only 16 active bits at the start and then 16 dummy bits
+    //
+    // synchronize audio samples coming from the core
+    wire	[31:0]	audgen_sampdata_s;
+    synch_3 #(.WIDTH(32)) s5(({audio, audio}), audgen_sampdata_s, audgen_sclk);
+    reg		[31:0]	audgen_sampshift;
+    reg		[4:0]	audgen_lrck_cnt;
+    reg				audgen_lrck;
+    reg				audgen_dac;
+    always @(negedge audgen_sclk) begin
+        // output the next bit
+        audgen_dac <= audgen_sampshift[31];
 
-reg HBlank, VBlank;
-always @(posedge clk_sys) begin
-	reg [10:0] hcnt, vcnt;
-	reg old_hbl, old_vbl;
+        // 48khz * 64
+        audgen_lrck_cnt <= audgen_lrck_cnt + 1'b1;
+        if(audgen_lrck_cnt == 31) begin
+            // switch channels
+            audgen_lrck <= ~audgen_lrck;
 
-	if(ce_pix) begin
-		hcnt <= hcnt + 1'd1;
-		old_hbl <= hblank;
-		if(old_hbl & ~hblank) begin
-			hcnt <= 0;
-			
-			vcnt <= vcnt + 1'd1;
-			old_vbl <= vblank_internal;
-			if(old_vbl & ~vblank_internal) vcnt <= 0;
-		end
-		
-		if (hcnt == 37)  HBlank <= 0;
-		if (hcnt == 292) HBlank <= 1;
-		
-		if (vcnt == 0)   VBlank <= 0;
-		if (vcnt == 240) VBlank <= 1;
-	end
-end
+            // Reload sample shifter
+            if(~audgen_lrck) begin
+                audgen_sampshift <= audgen_sampdata_s;
+            end
+        end
+        else if(audgen_lrck_cnt < 16) begin
+            // only shift for 16 clocks per channel
+            audgen_sampshift <= {audgen_sampshift[30:0], 1'b0};
+        end
+    end
 
-assign video_rgb_clock = clk_core_12288;
-assign video_rgb_clock_90 = clk_core_12288_90deg;
+    ///////////////////////////////////////////////
+    // Core Video
+    ///////////////////////////////////////////////
 
-reg video_de_reg;
-reg video_hs_reg;
-reg video_vs_reg;
-reg [23:0] video_rgb_reg;
-reg video_skip_reg;
+    //! @Video
+    wire       videowht;
+    wire [8:0] breakout_rgb; //! RGB 333
+    wire       breakout_hs;  //! Horizontal Sync
+    wire       breakout_vs;  //! Vertical Sync
+    wire       breakout_hb;  //! Horizontal Blank
+    wire       breakout_vb;  //! Vertical Blank
+    wire       breakout_ce_pix; //! Pixel Clock Coming from Core
+    wire       breakout_de = ~(r_hblank | r_vblank); //! Data Enable
+    wire [2:0] r, g, b;
 
-assign video_de = video_de_reg;
-assign video_hs = video_hs_reg;
-assign video_vs = video_vs_reg;
-assign video_rgb = video_rgb_reg;
-assign video_skip = video_skip_reg;
+    reg        r_hblank;
+    reg        r_vblank;
+    //! @end
 
-reg hs_prev;
-reg vs_prev;
-reg de_prev;
+    assign r = {3{videowht}};
+    assign g = {3{videowht}};
+    assign b = {3{videowht}};
 
-always @(posedge clk_core_12288) begin
-  video_de_reg <= 0;
-  video_rgb_reg <= 24'h0;
+    always @(posedge clk_sys) begin
+        reg [10:0] hcnt, vcnt;
+        reg old_hbl, old_vbl;
 
-  if (~(VBlank || HBlank)) begin
-    video_de_reg <= 1;
+        if(breakout_ce_pix) begin
+            hcnt <= hcnt + 1'd1;
+            old_hbl <= breakout_hb;
+            if(old_hbl & ~breakout_hb) begin
+                hcnt <= 0;
 
-    video_rgb_reg <= {3{videorgb}};
-  end
+                vcnt <= vcnt + 1'd1;
+                old_vbl <= breakout_vb;
+                if(old_vbl & ~breakout_vb)
+                    vcnt <= 0;
+            end
 
-  video_hs_reg <= ~hs_prev && hs;
-  video_vs_reg <= ~vs_prev && vs;
-  hs_prev <= hs;
-  vs_prev <= vs;
-end
+            if (hcnt == 37)  r_hblank <= 0;
+            if (hcnt == 296) r_hblank <= 1;
+
+            if (vcnt == 0)   r_vblank <= 0;
+            if (vcnt == 240) r_vblank <= 1;
+        end
+    end
+
+    assign video_rgb_clock = clk_video;
+    assign video_rgb_clock_90 = clk_video_90deg;
+
+    reg        video_de_reg;
+    reg        video_hs_reg;
+    reg        video_vs_reg;
+    reg [23:0] video_rgb_reg;
+
+    assign video_de = video_de_reg;
+    assign video_hs = video_hs_reg;
+    assign video_vs = video_vs_reg;
+    assign video_rgb = video_rgb_reg;
+
+    reg       hs_prev;
+    reg       vs_prev;
+    reg       de_prev;
+    reg [8:0] rgb_prev;
+
+    always @(posedge clk_video) begin
+        video_de_reg <= 0;
+        video_rgb_reg <= 24'h0;
+
+        if (de_prev) begin
+            video_de_reg <= 1;
+
+            video_rgb_reg[23:16] <= rgb_prev[8:6] * 32; //! Blue
+            video_rgb_reg[15:8]  <= rgb_prev[5:3] * 32; //! Green
+            video_rgb_reg[7:0]   <= rgb_prev[2:0] * 32; //! Red
+        end
+
+        video_hs_reg <= ~hs_prev && breakout_hs;
+        video_vs_reg <= ~vs_prev && breakout_vs;
+        hs_prev  <= breakout_hs;
+        vs_prev  <= breakout_vs;
+        de_prev  <= breakout_de;
+        rgb_prev <= breakout_rgb;
+    end
 
 
 //////////////////////////////////////////////
@@ -661,7 +670,7 @@ joy2quad steerjoy2quad0
 (
 	.CLK(clk_sys),
 	.clkdiv('d5500),
-	
+
 	.right(m_right),
 	.left(m_left),
 
@@ -676,10 +685,10 @@ joy2quad steerjoy2quad0
 -- Configuration DIP switches, these can be brought out to external switches if desired
 -- See Super Breakout manual page 13 for complete information. Active low (0 = On, 1 = Off)
 --    1 	2							Language				(00 - English)
---   			3	4					Coins per play		(10 - 1 Coin, 1 Play) 
+--   			3	4					Coins per play		(10 - 1 Coin, 1 Play)
 --						5				3/5 Balls			(1 - 3 Balls)
 --							6	7	8	Bonus play			(011 - 600 Progressive, 400 Cavity, 600 Double)
-		
+
 SW1 <= "00101011";
 */
 
@@ -693,15 +702,15 @@ super_breakout super_breakout(
 	.dn_wr(ioctl_wr),
 
 	.Video_O(videowht),
-	.Video_RGB(videorgb),
+    .Video_RGB(breakout_rgb),
 
 	.Audio_O(audio),
 	.Coin1_I(~m_coin),
 	.Coin2_I(1'b1),
-	
+
 	.Start1_I(~m_start1),
 	.Start2_I(~m_start2),
-	
+
 	.Serve_I(~m_serve),
 	.Select1_I(~m_select1),
 	.Select2_I(~m_select2),
@@ -712,13 +721,13 @@ super_breakout super_breakout(
 	.Paddle(8'h00),
 	.Lamp1_O(),
 	.Lamp2_O(),
-	.hs_O(hs),
-	.vs_O(vs),
-	.hblank_O(hblank),
-	.vblank_O(vblank_internal),
+    .hs_O(breakout_hs),
+    .vs_O(breakout_vs),
+    .hblank_O(breakout_hb),
+    .vblank_O(breakout_vb),
 	.clk_12(clk_sys),
-	.clk_6_O(ce_pix),
+	.clk_6_O(breakout_ce_pix),
 	.SW1_I(SW1)
 );
-    
+
 endmodule
