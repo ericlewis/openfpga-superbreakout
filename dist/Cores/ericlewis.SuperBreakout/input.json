@@ -1,27 +1,42 @@
 {
-    "input": {
-        "magic": "APF_VER_1",
-        "controllers": [
-            {
-                "type": "default",
-                "mappings": [
-                  {
-                    "id": 0,
-                    "name": "Serve",
-                    "key": "pad_btn_a"
-                  },
-                  {
-                    "id": 1,
-                    "name": "Insert Coin",
-                    "key": "pad_trig_r"
-                  },
-                  {
-                    "id": 2,
-                    "name": "Start",
-                    "key": "pad_btn_start"
-                  }
-                ]
-              }
+  "input": {
+    "magic": "APF_VER_1",
+    "controllers": [
+      {
+        "type": "default",
+        "mappings": [
+          {
+            "id": 0,
+            "name": "Left",
+            "key": "pad_btn_y"
+          },
+          {
+            "id": 1,
+            "name": "Right",
+            "key": "pad_btn_a"
+          },
+          {
+            "id": 2,
+            "name": "Serve",
+            "key": "pad_btn_b"
+          },
+          {
+            "id": 3,
+            "name": "Start 2P",
+            "key": "pad_btn_x"
+          },
+          {
+            "id": 4,
+            "name": "Insert Coin",
+            "key": "pad_btn_select"
+          },
+          {
+            "id": 5,
+            "name": "Start 1P",
+            "key": "pad_btn_start"
+          }
         ]
-    }
+      }
+    ]
+  }
 }

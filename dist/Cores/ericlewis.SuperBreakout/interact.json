@@ -1,7 +1,177 @@
 {
-    "interact": {
-        "magic": "APF_VER_1",
-        "variables": [],
-        "messages": []
-    }
+  "interact": {
+    "magic": "APF_VER_1",
+    "variables": [
+      {
+        "id": "0x00",
+        "name": "Control",
+        "type": "list",
+        "address": "0x50000000",
+        "defaultval": "0x00",
+        "options": [
+          {
+            "value": "0x00",
+            "name": "Buttons"
+          },
+          {
+            "value": "0x01",
+            "name": "Analog Stick"
+          }
+        ],
+        "enabled": true,
+        "persist": true
+      },
+      {
+        "id": "0x01",
+        "name": "Language",
+        "type": "list",
+        "address": "0x50000004",
+        "defaultval": "0x00",
+        "options": [
+          {
+            "value": "0x00",
+            "name": "English"
+          },
+          {
+            "value": "0x01",
+            "name": "German"
+          },
+          {
+            "value": "0x02",
+            "name": "French"
+          },
+          {
+            "value": "0x03",
+            "name": "Spanish"
+          }
+        ],
+        "enabled": true,
+        "persist": true
+      },
+      {
+        "id": "0x02",
+        "name": "Balls",
+        "type": "list",
+        "address": "0x50000008",
+        "defaultval": "0x00",
+        "options": [
+          {
+            "value": "0x00",
+            "name": "3"
+          },
+          {
+            "value": "0x01",
+            "name": "5"
+          }
+        ],
+        "enabled": true,
+        "persist": true
+      },
+      {
+        "id": "0x03",
+        "name": "Bonus",
+        "type": "list",
+        "address": "0x5000000C",
+        "defaultval": "0x02",
+        "options": [
+          {
+            "value": "0x00",
+            "name": "200"
+          },
+          {
+            "value": "0x01",
+            "name": "400"
+          },
+          {
+            "value": "0x02",
+            "name": "600"
+          },
+          {
+            "value": "0x03",
+            "name": "900"
+          },
+          {
+            "value": "0x04",
+            "name": "1200"
+          },
+          {
+            "value": "0x05",
+            "name": "1600"
+          },
+          {
+            "value": "0x06",
+            "name": "2000"
+          },
+          {
+            "value": "0x07",
+            "name": "None"
+          }
+        ],
+        "enabled": true,
+        "persist": true
+      },
+      {
+        "id": "0x04",
+        "name": "Level",
+        "type": "list",
+        "address": "0x50000010",
+        "defaultval": "0x00",
+        "options": [
+          {
+            "value": "0x00",
+            "name": "Cavity"
+          },
+          {
+            "value": "0x01",
+            "name": "Progressive"
+          },
+          {
+            "value": "0x02",
+            "name": "Double"
+          }
+        ],
+        "enabled": true,
+        "persist": true
+      },
+      {
+        "id": "0x05",
+        "name": "Test",
+        "type": "list",
+        "address": "0x50000014",
+        "defaultval": "0x00",
+        "options": [
+          {
+            "value": "0x00",
+            "name": "Off"
+          },
+          {
+            "value": "0x01",
+            "name": "On"
+          }
+        ],
+        "enabled": true,
+        "persist": true
+      },
+      {
+        "id": "0x06",
+        "name": "Color",
+        "type": "list",
+        "address": "0x50000018",
+        "defaultval": "0x01",
+        "options": [
+          {
+            "value": "0x01",
+            "name": "On"
+          },
+          {
+            "value": "0x00",
+            "name": "Off"
+          }
+        ],
+        "enabled": true,
+        "persist": true
+      }
+    ],
+    "messages": []
+  }
 }

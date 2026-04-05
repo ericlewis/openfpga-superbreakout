@@ -7,8 +7,8 @@
             "description": "Atari's Super Breakout released in 1978.",
             "author": "ericlewis",
             "url": "https://github.com/ericlewis/openfpga-superbreakout",
-            "version": "0.0.1",
-            "date_release": "2022-09-14"
+            "version": "0.1.0",
+            "date_release": "2026-04-05"
         },
         "framework": {
             "target_product": "Analogue Pocket",

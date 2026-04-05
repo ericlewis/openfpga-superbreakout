@@ -434,14 +434,66 @@ core_bridge_cmd icb (
 
 );
 
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-
     wire    clk_sys;
     wire    clk_video;
     wire    clk_video_90deg;
     wire    pll_core_locked;
+
+    //////////////////////////////////////////////
+    // Core Settings
+    //////////////////////////////////////////////
+
+    reg [1:0] cfg_control_mode_74a = 2'd0;
+    reg [1:0] cfg_language_74a = 2'd0;
+    reg       cfg_five_balls_74a = 1'b0;
+    reg [2:0] cfg_bonus_74a = 3'd2;
+    reg [1:0] cfg_level_mode_74a = 2'd0;
+    reg       cfg_test_mode_74a = 1'b0;
+    reg       cfg_color_enable_74a = 1'b1;
+
+    wire [11:0] cfg_bus_74a = {
+        cfg_color_enable_74a,
+        cfg_test_mode_74a,
+        cfg_level_mode_74a,
+        cfg_bonus_74a,
+        cfg_five_balls_74a,
+        cfg_language_74a,
+        cfg_control_mode_74a
+    };
+    wire [11:0] cfg_bus_sys;
+
+    always @(posedge clk_74a) begin
+        if (bridge_wr) begin
+            casex (bridge_addr)
+                32'h50000000: cfg_control_mode_74a <= bridge_wr_data[1:0];
+                32'h50000004: cfg_language_74a <= bridge_wr_data[1:0];
+                32'h50000008: cfg_five_balls_74a <= bridge_wr_data[0];
+                32'h5000000C: cfg_bonus_74a <= bridge_wr_data[2:0];
+                32'h50000010: cfg_level_mode_74a <= bridge_wr_data[1:0];
+                32'h50000014: cfg_test_mode_74a <= bridge_wr_data[0];
+                32'h50000018: cfg_color_enable_74a <= bridge_wr_data[0];
+            endcase
+        end
+    end
+
+    synch_2 #(
+        .WIDTH(12)
+    ) cfg_sync (
+        cfg_bus_74a,
+        cfg_bus_sys,
+        clk_sys
+    );
+
+    wire [1:0] cfg_control_mode = cfg_bus_sys[1:0];
+    wire [1:0] cfg_language = cfg_bus_sys[3:2];
+    wire       cfg_five_balls = cfg_bus_sys[4];
+    wire [2:0] cfg_bonus = cfg_bus_sys[7:5];
+    wire [1:0] cfg_level_mode = cfg_bus_sys[9:8];
+    wire       cfg_test_mode = cfg_bus_sys[10];
+    wire       cfg_color_enable = cfg_bus_sys[11];
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////
 
     mf_pllbase mp1(
         .refclk   ( clk_74a ),
@@ -485,12 +537,18 @@ core_bridge_cmd icb (
     //////////////////////////////////////////////
 
     wire [7:0] audio;
+    wire [7:0] audio_sample;
+    wire [31:0] audgen_sampdata = {audio_sample, 8'h00, audio_sample, 8'h00};
 
     assign audio_mclk = audgen_mclk;
     assign audio_dac = audgen_dac;
     assign audio_lrck = audgen_lrck;
+    assign video_skip = 0;
 
     reg    audgen_nextsamp;
+    reg [24:0] audio_mute_count;
+
+    assign audio_sample = (audio_mute_count < 25'd24000000) ? 8'd0 : audio;
 
     // generate MCLK = 12.288mhz with fractional accumulator
     reg         [21:0]  audgen_accum;
@@ -501,6 +559,14 @@ core_bridge_cmd icb (
         if(audgen_accum >= 21'd742500) begin
             audgen_mclk <= ~audgen_mclk;
             audgen_accum <= audgen_accum - 21'd742500 + CYCLE_48KHZ;
+        end
+    end
+
+    always @(posedge clk_sys) begin
+        if (!reset_n) begin
+            audio_mute_count <= 25'd0;
+        end else if (audio_mute_count < 25'd24000000) begin
+            audio_mute_count <= audio_mute_count + 1'd1;
         end
     end
 
@@ -515,8 +581,8 @@ core_bridge_cmd icb (
     // 32 total bits per channel, but only 16 active bits at the start and then 16 dummy bits
     //
     // synchronize audio samples coming from the core
-    wire	[31:0]	audgen_sampdata_s;
-    synch_3 #(.WIDTH(32)) s5(({audio, audio}), audgen_sampdata_s, audgen_sclk);
+	    wire	[31:0]	audgen_sampdata_s;
+    synch_3 #(.WIDTH(32)) s5(audgen_sampdata, audgen_sampdata_s, clk_74a);
     reg		[31:0]	audgen_sampshift;
     reg		[4:0]	audgen_lrck_cnt;
     reg				audgen_lrck;
@@ -564,6 +630,7 @@ core_bridge_cmd icb (
     assign r = {3{videowht}};
     assign g = {3{videowht}};
     assign b = {3{videowht}};
+    wire [8:0] breakout_rgb_mode = cfg_color_enable ? breakout_rgb : {r, g, b};
 
     always @(posedge clk_sys) begin
         reg [10:0] hcnt, vcnt;
@@ -624,7 +691,7 @@ core_bridge_cmd icb (
         hs_prev  <= breakout_hs;
         vs_prev  <= breakout_vs;
         de_prev  <= breakout_de;
-        rgb_prev <= breakout_rgb;
+        rgb_prev <= breakout_rgb_mode;
     end
 
 
@@ -634,6 +701,7 @@ core_bridge_cmd icb (
 
 wire [15:0] cont1_key_s;
 wire [15:0] cont2_key_s;
+wire [31:0] cont1_joy_s;
 
 synch_2 #(
     .WIDTH(16)
@@ -651,18 +719,26 @@ synch_2 #(
     clk_sys
 );
 
+synch_2 #(
+    .WIDTH(32)
+) cont1_joy_sync (
+    cont1_joy,
+    cont1_joy_s,
+    clk_sys
+);
+
 wire [15:0] joy = cont1_key_s | cont2_key_s;
 
-wire m_left	   =   joy[2];
-wire m_right   =   joy[3];
-wire m_serve   =   joy[4];
+wire m_left    = joy[2] | joy[7];
+wire m_right   = joy[3] | joy[4];
+wire m_serve   = joy[5];
 
-wire m_select1 = 1'b0; // TODO: Select level Double
-wire m_select2 = 1'b0; // TODO: Select level Progressive
+wire m_select1 = (cfg_level_mode == 2'd2);
+wire m_select2 = (cfg_level_mode == 2'd1);
 
 wire m_start1  =  joy[15];
-wire m_start2  =  joy[14];
-wire m_coin    =  joy[9];
+wire m_start2  =  joy[6];
+wire m_coin    =  joy[14] | joy[9];
 
 wire [1:0] steer0;
 
@@ -692,7 +768,7 @@ joy2quad steerjoy2quad0
 SW1 <= "00101011";
 */
 
-wire [7:0] SW1 = {1'b0, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b1};
+wire [7:0] SW1 = {cfg_language, 1'b1, 1'b0, cfg_five_balls, cfg_bonus};
 
 super_breakout super_breakout(
 	.Reset_n(reset_n),
@@ -709,18 +785,18 @@ super_breakout super_breakout(
 	.Coin2_I(1'b1),
 
 	.Start1_I(~m_start1),
-	.Start2_I(~m_start2),
+		.Start2_I(~m_start2),
 
-	.Serve_I(~m_serve),
-	.Select1_I(~m_select1),
-	.Select2_I(~m_select2),
-	.Slam_I(1),
-	.Test_I(1'b1),
-	.Enc_A(steer0[1]),
-	.Enc_B(steer0[0]),
-	.Paddle(8'h00),
-	.Lamp1_O(),
-	.Lamp2_O(),
+		.Serve_I(~m_serve),
+		.Select1_I(~m_select1),
+		.Select2_I(~m_select2),
+		.Slam_I(1),
+		.Test_I(~cfg_test_mode),
+		.Enc_A(steer0[1]),
+		.Enc_B(steer0[0]),
+		.Paddle((cfg_control_mode == 2'd1) ? cont1_joy_s[7:0] : 8'h00),
+		.Lamp1_O(),
+		.Lamp2_O(),
     .hs_O(breakout_hs),
     .vs_O(breakout_vs),
     .hblank_O(breakout_hb),
