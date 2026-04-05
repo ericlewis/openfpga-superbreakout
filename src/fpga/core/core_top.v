@@ -329,6 +329,27 @@ always @(*) begin
     default: begin
         bridge_rd_data <= 0;
     end
+    32'h50000000: begin
+        bridge_rd_data <= {30'd0, cfg_control_mode_74a};
+    end
+    32'h50000004: begin
+        bridge_rd_data <= {30'd0, cfg_language_74a};
+    end
+    32'h50000008: begin
+        bridge_rd_data <= {31'd0, cfg_five_balls_74a};
+    end
+    32'h5000000C: begin
+        bridge_rd_data <= {29'd0, cfg_bonus_74a};
+    end
+    32'h50000010: begin
+        bridge_rd_data <= {30'd0, cfg_level_mode_74a};
+    end
+    32'h50000014: begin
+        bridge_rd_data <= {31'd0, cfg_test_mode_74a};
+    end
+    32'h50000018: begin
+        bridge_rd_data <= {31'd0, cfg_color_enable_74a};
+    end
     32'h10xxxxxx: begin
         // example
         // bridge_rd_data <= example_device_data;
