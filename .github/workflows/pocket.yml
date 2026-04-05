@@ -1,5 +1,8 @@
 name: Build Super Breakout Core
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [main, master]
@@ -52,3 +55,45 @@ jobs:
           name: ericlewis.SuperBreakout-pocket
           path: release/
           retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ericlewis.SuperBreakout-pocket
+          path: release/
+
+      - name: Archive release payload
+        run: |
+          cd release
+          zip -r ../ericlewis.SuperBreakout-pocket.zip .
+
+      - name: Publish nightly release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=nightly
+          TITLE="Nightly build"
+          NOTES="Automated build from ${GITHUB_SHA}."
+
+          git tag -f "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG" --force
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES" --prerelease
+            gh release upload "$TAG" ericlewis.SuperBreakout-pocket.zip --clobber
+          else
+            gh release create "$TAG" ericlewis.SuperBreakout-pocket.zip \
+              --title "$TITLE" \
+              --notes "$NOTES" \
+              --prerelease
+          fi

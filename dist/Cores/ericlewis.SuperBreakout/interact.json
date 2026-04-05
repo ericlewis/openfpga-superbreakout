@@ -16,6 +16,10 @@
           {
             "value": "0x01",
             "name": "Analog Stick"
+          },
+          {
+            "value": "0x02",
+            "name": "Dock Mouse"
           }
         ],
         "enabled": true,

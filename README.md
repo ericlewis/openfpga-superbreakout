@@ -6,7 +6,7 @@
 
 ## Known Issues
 
-+ Dedicated paddle hardware is not available on Pocket. Use digital buttons or the left analog stick.
++ Dedicated paddle hardware is not available on Pocket. Use digital buttons, the left analog stick, or a docked USB mouse.
 
 ## ROM Instructions
 
@@ -20,3 +20,4 @@ ROM files are not included, you must use [mra-tools-c](https://github.com/sebdel
 + `Start` starts 1-player mode.
 + `Select` inserts a coin.
 + The left analog stick can be enabled from Core Settings > Control.
++ A docked USB mouse can be enabled from Core Settings > Control. Mouse movement controls the paddle and left click serves.

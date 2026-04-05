@@ -224,6 +224,21 @@ input   wire    [15:0]  cont4_trig
 
 );
 
+function [7:0] clamp_mouse_paddle;
+    input [7:0] cur;
+    input signed [15:0] dx;
+    reg signed [16:0] next;
+begin
+    next = $signed({1'b0, cur}) + dx;
+    if (next < 0)
+        clamp_mouse_paddle = 8'h00;
+    else if (next > 17'sd255)
+        clamp_mouse_paddle = 8'hFF;
+    else
+        clamp_mouse_paddle = next[7:0];
+end
+endfunction
+
 // not using the IR port, so turn off both the LED, and
 // disable the receive circuit to save power
 assign port_ir_tx = 0;
@@ -702,6 +717,8 @@ core_bridge_cmd icb (
 wire [15:0] cont1_key_s;
 wire [15:0] cont2_key_s;
 wire [31:0] cont1_joy_s;
+wire [15:0] cont4_key_s;
+wire [31:0] cont4_joy_s;
 
 synch_2 #(
     .WIDTH(16)
@@ -727,11 +744,42 @@ synch_2 #(
     clk_sys
 );
 
+synch_2 #(
+    .WIDTH(16)
+) cont4_key_sync (
+    cont4_key,
+    cont4_key_s,
+    clk_sys
+);
+
+synch_2 #(
+    .WIDTH(32)
+) cont4_joy_sync (
+    cont4_joy,
+    cont4_joy_s,
+    clk_sys
+);
+
+wire signed [15:0] mouse_dx = cont4_joy_s[15:0];
+wire mouse_left_click = cont4_joy_s[16];
+reg [7:0] mouse_paddle = 8'h80;
+reg [15:0] mouse_report_prev;
+
+always @(posedge clk_sys) begin
+    if (!reset_n) begin
+        mouse_paddle <= 8'h80;
+        mouse_report_prev <= 16'h0000;
+    end else if (cont4_key_s != mouse_report_prev) begin
+        mouse_report_prev <= cont4_key_s;
+        mouse_paddle <= clamp_mouse_paddle(mouse_paddle, mouse_dx);
+    end
+end
+
 wire [15:0] joy = cont1_key_s | cont2_key_s;
 
 wire m_left    = joy[2] | joy[7];
 wire m_right   = joy[3] | joy[4];
-wire m_serve   = joy[5];
+wire m_serve   = joy[5] | ((cfg_control_mode == 2'd2) & mouse_left_click);
 
 wire m_select1 = (cfg_level_mode == 2'd2);
 wire m_select2 = (cfg_level_mode == 2'd1);
@@ -794,7 +842,9 @@ super_breakout super_breakout(
 		.Test_I(~cfg_test_mode),
 		.Enc_A(steer0[1]),
 		.Enc_B(steer0[0]),
-		.Paddle((cfg_control_mode == 2'd1) ? cont1_joy_s[7:0] : 8'h00),
+		.Paddle((cfg_control_mode == 2'd1) ? cont1_joy_s[7:0] :
+		        (cfg_control_mode == 2'd2) ? mouse_paddle :
+		        8'h00),
 		.Lamp1_O(),
 		.Lamp2_O(),
     .hs_O(breakout_hs),
